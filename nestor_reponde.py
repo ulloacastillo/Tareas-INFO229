@@ -5,17 +5,39 @@ import slack
 import os
 from slackeventsapi import SlackEventAdapter
 
+#VERSION WINDOWS
+from pathlib import Path
+from dotenv import load_dotenv
+path = Path('.') / '.env'
+load_dotenv(dotenv_path=path)
+TOKEN = os.environ["SLACK_TOKEN"]
+SIGNING_SECRET = os.environ["SIGNING_SECRET"]
+
+'''
+#VERSION UNIX
 TOKEN = os.environ.get("SLACK_TOKEN")
 SIGNING_SECRET = os.environ.get("SIGNING_SECRET")
+'''
 #OBTENER DEL NAVEGADOR:
 #                       IR A ESPACIO DE TRABAJO Y SELECCIONAR CANAL
 #                       EL CHANNEL ID SERA LA ULTIMA SERIE DE DIGITOS-LETRAS ESE LINK
 #                       https://app.slack.com/client/XXXXXXXXXXX/C01CB597ZA6
+
 client = slack.WebClient(token=TOKEN)
 app = Flask(__name__)
 slack_event = SlackEventAdapter(SIGNING_SECRET, '/slack/events', app)
 
-client.chat_postMessage(channel='#general', text='test')
+BOT_ID = client.api_call('auth.test')['user_id']
+
+@slack_event.on('message')
+def message(payload):
+    print(payload)
+    event = payload.get('event', {})
+    channel_id = event.get('channel')
+    user_id = event.get('user')
+    text = event.get('text')
+    if user_id != BOT_ID:
+        client.chat_postMessage(channel=channel_id, text=text)
 
 
 if __name__ == '__main__':
